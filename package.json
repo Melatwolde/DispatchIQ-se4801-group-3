@@ -1,10 +1,10 @@
 {
   "name": "dispatch-iq",
   "devDependencies": {
-    "@jnxplus/nx-gradle": "^2.3.0",
-    "@nx/gradle": "^22.7.1",
+    "@jnxplus/nx-maven": "^2.3.0",
     "@nx/js": "22.7.1",
     "@nx/next": "^22.7.1",
+    "@prettier/plugin-xml": "^3.4.1",
     "@swc-node/register": "~1.11.1",
     "@swc/cli": "~0.8.0",
     "@swc/core": "~1.15.5",

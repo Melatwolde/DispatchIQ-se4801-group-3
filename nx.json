@@ -7,17 +7,16 @@
   "targetDefaults": {
     "build": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
     }
   },
   "plugins": [
-    {
-      "plugin": "@jnxplus/nx-gradle",
-      "options": {
-        "gradleRootDirectory": "."
-      }
-    },
     {
       "plugin": "@nx/next/plugin",
       "options": {
@@ -28,11 +27,22 @@
         "buildDepsTargetName": "build-deps",
         "watchDepsTargetName": "watch-deps"
       }
+    },
+    {
+      "plugin": "@jnxplus/nx-maven",
+      "options": {
+        "localRepoRelativePath": ".m2/repository"
+      }
     }
   ],
   "namedInputs": {
-    "default": ["{projectRoot}/**/*"],
-    "production": ["default", "!{projectRoot}/src/test/**/*"]
+    "default": [
+      "{projectRoot}/**/*"
+    ],
+    "production": [
+      "default",
+      "!{projectRoot}/src/test/**/*"
+    ]
   },
   "generators": {
     "@nx/next": {

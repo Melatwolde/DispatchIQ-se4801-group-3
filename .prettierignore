@@ -1,2 +1,6 @@
 # Gradle build
 build/
+
+# Maven target
+target/
+.m2/repository

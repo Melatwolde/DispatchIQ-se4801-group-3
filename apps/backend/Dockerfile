@@ -1,25 +1,25 @@
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
-# Copy Gradle wrapper and config files
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
-COPY gradle/libs.versions.toml gradle/
+# Copy Maven wrapper and config
+COPY .mvn .mvn
+COPY mvnw .
+COPY pom.xml .
 
-# Copy source code
-COPY apps/backend apps/backend
+# Copy backend source
+COPY apps/backend/pom.xml apps/backend/
+COPY apps/backend/src apps/backend/src
 
-# Build the jar 
-RUN ./gradlew :apps:backend:bootJar --no-daemon
+# Give permission and build
+RUN chmod +x mvnw
+RUN ./mvnw clean package -DskipTests --no-transfer-progress
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Copy the built jar (note the path)
-COPY --from=build /app/apps/backend/build/libs/*.jar app.jar
+# Copy the built jar from Maven target
+COPY --from=build /app/apps/backend/target/*.jar app.jar
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
