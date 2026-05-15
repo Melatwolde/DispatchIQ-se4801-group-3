@@ -87,3 +87,6 @@ docker compose up --build
   ```
 
 - **Port conflicts:** If port `8080` is already in use, modify the `server.port` property in `apps/backend/src/main/resources/application.properties`.
+
+swagger documentation 
+http://localhost:8080/swagger-ui/index.html
