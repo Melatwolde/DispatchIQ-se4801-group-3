@@ -69,6 +69,7 @@ The API server will be accessible at `http://localhost:8080`.
 To build and run the application within a containerized environment, use the following command from the project root:
 
 ```bash
+docker compose up -d postgres
 docker compose up --build
 ```
 
