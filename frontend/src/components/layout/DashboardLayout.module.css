@@ -1,0 +1,48 @@
+/* /frontend/src/components/layout/DashboardLayout.module.css */
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-base);
+}
+
+.mainWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.3s ease;
+  margin-left: 250px;
+}
+
+@media (max-width: 1024px) {
+  .mainWrapper {
+    margin-left: 0;
+  }
+}
+
+.mainContent {
+  flex: 1;
+  padding: var(--space-8);
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    padding: var(--space-6);
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 35;
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .overlay.visible {
+    display: block;
+  }
+}

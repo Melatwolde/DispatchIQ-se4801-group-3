@@ -1,0 +1,86 @@
+/* /frontend/src/components/layout/TopBar.module.css */
+.topbar {
+  height: 64px;
+  background-color: var(--color-base);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.menuBtn {
+  display: none;
+  color: var(--color-text);
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+}
+
+.searchBar input {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: var(--space-1);
+  outline: none;
+  font-size: 14px;
+  width: 200px;
+}
+
+.iconBtn {
+  color: var(--color-text-muted);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.iconBtn:hover {
+  color: var(--color-text);
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-accent);
+  border-radius: 50%;
+}
+
+@media (max-width: 1024px) {
+  .menuBtn {
+    display: block;
+  }
+  .searchBar {
+    display: none;
+  }
+}
