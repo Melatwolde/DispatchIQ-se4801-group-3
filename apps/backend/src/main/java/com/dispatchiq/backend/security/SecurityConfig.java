@@ -18,7 +18,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity // Enables @PreAuthorize support
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
@@ -35,7 +35,37 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/auth/**", "/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/**",
+                                "/auth/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/actuator/health"
+                        ).permitAll()
+
+                        // Admin-only: system config, audit logs, user management
+                        .requestMatchers("/api/v1/admin/**", "/api/v1/audit/**").hasRole("ADMIN")
+
+                        // Manager: analytics, performance reports (read-only)
+                        .requestMatchers("/api/v1/performance/**", "/api/v1/analytics/**")
+                            .hasAnyRole("MANAGER", "ADMIN")
+
+                        // Dispatcher: assignment, fleet management, dispatch operations
+                        .requestMatchers(
+                                "/api/v1/dispatch/**",
+                                "/api/v1/fleets/**",
+                                "/api/v1/assignments/**"
+                        ).hasAnyRole("DISPATCHER", "MANAGER", "ADMIN")
+
+                        // Driver: accept/reject assignments, update status, view own deliveries
+                        .requestMatchers("/api/v1/driver/**", "/api/v1/assignments/{id}/accept", "/api/v1/assignments/{id}/reject")
+                            .hasRole("DRIVER")
+
+                        .requestMatchers("/api/v1/deliveries/**")
+                            .hasAnyRole("CUSTOMER", "DISPATCHER", "ADMIN") 
+
+                
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -48,10 +78,26 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow Nx frontend domain
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        
+        // Allow Nx frontend domains
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:4200"
+        ));
+        
+        configuration.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+        ));
+        
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "Accept",
+                "Idempotency-Key" 
+        ));
+
+        configuration.setExposedHeaders(List.of("Authorization"));
+        
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

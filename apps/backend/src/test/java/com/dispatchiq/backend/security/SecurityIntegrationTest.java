@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -23,94 +24,96 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class SecurityIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    @BeforeEach
-    void setUp() {
-        userRepository.deleteAll();
-    }
+        @BeforeEach
+        void setUp() {
+                userRepository.deleteAll();
+        }
 
-    @Test
-    void shouldRegisterUserAndReturnTokens() throws Exception {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail("dispatcher@dispatchiq.com");
-        request.setPassword("securePassword");
-        request.setFullName("Test Dispatcher");
-        request.setPhone("1234567890");
-        request.setRole(Role.DISPATCHER);
+        @Test
+        void shouldRegisterUserAndReturnTokens() throws Exception {
+                RegisterRequest request = new RegisterRequest();
+                request.setEmail("dispatcher@dispatchiq.com");
+                request.setPassword("securePassword");
+                request.setFullName("Test Dispatcher");
+                request.setPhone("1234567890");
+                request.setRole(Role.DISPATCHER);
 
-        mockMvc.perform(post("/api/v1/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
-    }
+                mockMvc.perform(post("/api/v1/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.accessToken").isNotEmpty());
 
-    @Test
-    void shouldLoginAndAccessSecuredEndpoint() throws Exception {
-        // 1. Register Dispatcher
-        RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setEmail("dispatcher2@dispatchiq.com");
-        registerRequest.setPassword("securePass");
-        registerRequest.setFullName("Test Dispatcher 2");
-        registerRequest.setPhone("0987654321");
-        registerRequest.setRole(Role.DISPATCHER);
+        }
 
-        mockMvc.perform(post("/api/v1/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequest)))
-                .andExpect(status().isOk());
+        @Test
+        void shouldLoginAndAccessSecuredEndpoint() throws Exception {
+                // 1. Register Dispatcher
+                RegisterRequest registerRequest = new RegisterRequest();
+                registerRequest.setEmail("dispatcher2@dispatchiq.com");
+                registerRequest.setPassword("securePass");
+                registerRequest.setFullName("Test Dispatcher 2");
+                registerRequest.setPhone("0987654321");
+                registerRequest.setRole(Role.DISPATCHER);
 
-        // 2. Login
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setEmail("dispatcher2@dispatchiq.com");
-        loginRequest.setPassword("securePass");
+                mockMvc.perform(post("/api/v1/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(registerRequest)))
+                                .andExpect(status().isOk());
 
-        String response = mockMvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
+                // 2. Login
+                LoginRequest loginRequest = new LoginRequest();
+                loginRequest.setEmail("dispatcher2@dispatchiq.com");
+                loginRequest.setPassword("securePass");
 
-        // Extract token manually from JSON
-        String token = objectMapper.readTree(response).get("accessToken").asText();
+                String response = mockMvc.perform(post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(loginRequest)))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
 
-        // 3. Access Route requiring DISPATCHER role
-        mockMvc.perform(get("/dispatch")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
-    }
+                // Extract token manually from JSON
+                String token = objectMapper.readTree(response).get("accessToken").asText();
 
-    @Test
-    void shouldReturn401WithoutToken() throws Exception {
-        mockMvc.perform(get("/dispatch"))
-                .andExpect(status().isUnauthorized()); // Could also be 403 based on Spring Security version defaults, let's test for unauthorized or forbidden. But typically 403 if authenticated but lacking role, 401 if unauthenticated. Actually stateless filter does not auto-return 401 if not configured with AuthenticationEntryPoint.
-    }
+                // 3. Access Route requiring DISPATCHER role
+                mockMvc.perform(get("/dispatch")
+                                .header("Authorization", "Bearer " + token))
+                                .andExpect(status().isOk());
+        }
 
-    @Test
-    void shouldFailRoleCheck() throws Exception {
-        // Register DRIVER trying to access DISPATCHER route
-        RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setEmail("driver@dispatchiq.com");
-        registerRequest.setPassword("pass");
-        registerRequest.setFullName("Driver");
-        registerRequest.setRole(Role.DRIVER);
+        @Test
+        void shouldReturn401WithoutToken() throws Exception {
+                mockMvc.perform(get("/dispatch"))
+                                .andExpect(status().isUnauthorized());
+        }
 
-        String response = mockMvc.perform(post("/api/v1/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequest)))
-                .andReturn().getResponse().getContentAsString();
+        @Test
+        void shouldFailRoleCheck() throws Exception {
+                // Register DRIVER trying to access DISPATCHER route
+                RegisterRequest registerRequest = new RegisterRequest();
+                registerRequest.setEmail("driver@dispatchiq.com");
+                registerRequest.setPassword("pass");
+                registerRequest.setFullName("Driver");
+                registerRequest.setRole(Role.DRIVER);
 
-        String token = objectMapper.readTree(response).get("accessToken").asText();
+                String response = mockMvc.perform(post("/api/v1/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(registerRequest)))
+                                .andReturn().getResponse().getContentAsString();
 
-        mockMvc.perform(get("/dispatch")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().isForbidden());
-    }
+                String token = objectMapper.readTree(response).get("accessToken").asText();
+
+                mockMvc.perform(get("/dispatch")
+                                .header("Authorization", "Bearer " + token))
+                                .andExpect(status().isForbidden());
+        }
 }
