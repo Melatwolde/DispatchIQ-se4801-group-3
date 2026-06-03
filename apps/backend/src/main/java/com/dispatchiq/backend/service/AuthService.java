@@ -6,49 +6,46 @@ import com.dispatchiq.backend.api.dto.response.AuthResponse;
 import com.dispatchiq.backend.entity.User;
 import com.dispatchiq.backend.repository.UserRepository;
 import com.dispatchiq.backend.security.JwtService;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository repository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
-
-    public AuthService(UserRepository repository, PasswordEncoder passwordEncoder, JwtService jwtService,
-            AuthenticationManager authenticationManager) {
-        this.repository = repository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.authenticationManager = authenticationManager;
-    }
 
     public AuthResponse register(RegisterRequest request) {
-        var user = new User(
-                request.getEmail(),
-                passwordEncoder.encode(request.getPassword()),
-                request.getFullName(),
-                request.getPhone(),
-                request.getRole());
-        repository.save(user);
-        var jwtToken = jwtService.generateToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user);
-        return new AuthResponse(jwtToken, refreshToken);
+        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        // Role must match PostgreSQL enum: ADMIN, MANAGER, DISPATCHER, DRIVER, CUSTOMER
+        User user = User.builder()
+                .email(request.getEmail())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.getFullName())
+                .phone(request.getPhone())
+                .role(request.getRole())
+                .build();
+
+        userRepository.save(user);
+        String token = jwtService.generateToken(user);
+        return new AuthResponse(token, user.getId(), user.getRole().name());
     }
 
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()));
-        var user = repository.findByEmailIgnoreCase(request.getEmail())
-                .orElseThrow();
-        var jwtToken = jwtService.generateToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user);
-        return new AuthResponse(jwtToken, refreshToken);
+        User user = userRepository.findByEmailIgnoreCase(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        String token = jwtService.generateToken(user);
+        return new AuthResponse(token, user.getId(), user.getRole().name());
     }
 }

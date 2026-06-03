@@ -11,6 +11,7 @@ import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import lombok.Builder;
 
 @Entity
 @Table(name = "users")
@@ -43,6 +44,7 @@ public class User implements UserDetails {
     public User() {
     }
 
+    @Builder
     public User(String email, String passwordHash, String fullName, String phone, Role role) {
         this.email = email;
         this.passwordHash = passwordHash;
