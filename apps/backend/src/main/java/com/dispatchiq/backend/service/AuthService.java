@@ -23,12 +23,24 @@ public class AuthService {
             throw new IllegalArgumentException("Email already registered");
         }
 
-        // Role must match PostgreSQL enum: ADMIN, MANAGER, DISPATCHER, DRIVER, CUSTOMER
+        // Parse phone string into numeric value (strip non-digits)
+        Long phoneNumber = null;
+        if (request.getPhone() != null) {
+            String digits = request.getPhone().replaceAll("\\D+", "");
+            if (!digits.isEmpty()) {
+                try {
+                    phoneNumber = Long.parseLong(digits);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid phone number");
+                }
+            }
+        }
+
         User user = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
-                .phone(request.getPhone())
+                .phone(phoneNumber)
                 .role(request.getRole())
                 .build();
 

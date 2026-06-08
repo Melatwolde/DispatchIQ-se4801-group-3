@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { Navigation2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '../../../components/ui/Button';
 import { Input, Select } from '../../../components/ui/Input';
 import styles from './../Auth.module.css';
+import { register } from '../../../lib/server-actions/auth.actions';
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const [password, setPassword] = useState('');
   const [strength, setStrength] = useState(0);
 
@@ -24,13 +24,29 @@ export default function RegisterPage() {
     setStrength(Math.min(3, Math.floor(s / 1.3))); // Scale 0-3
   }, [password]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      router.push('/login');
-    }, 800);
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    
+    // Combine first and last name into fullName
+    const firstName = formData.get('firstName') as string;
+    const lastName = formData.get('lastName') as string;
+    formData.set('fullName', `${firstName} ${lastName}`.trim());
+    
+    // Check if passwords match
+    const confirmPassword = formData.get('confirmPassword') as string;
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await register(formData);
+      if (result && !result.success) {
+        setError(result.error);
+      }
+    });
   };
 
   return (
@@ -44,20 +60,23 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {error && <div className={styles.errorAlert} style={{ color: 'red', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
+        
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <Input label="First Name" placeholder="John" required />
-          <Input label="Last Name" placeholder="Doe" required />
+          <Input label="First Name" name="firstName" placeholder="John" required />
+          <Input label="Last Name" name="lastName" placeholder="Doe" required />
         </div>
 
-        <Input label="Email" type="email" placeholder="you@example.com" required />
-        <Input label="Phone" type="tel" placeholder="+1 (555) 000-0000" />
+        <Input label="Email" type="email" name="email" placeholder="you@example.com" required />
+        <Input label="Phone" type="tel" name="phone" placeholder="+1 (555) 000-0000" />
 
         <Select
           label="Role"
+          name="role"
           options={[
-            { value: 'user', label: 'User (Default)' },
-            { value: 'dispatcher', label: 'Dispatcher' },
-            { value: 'admin', label: 'Admin' }
+            { value: 'CUSTOMER', label: 'User (Default)' },
+            { value: 'DISPATCHER', label: 'Dispatcher' },
+            { value: 'ADMIN', label: 'Admin' }
           ]}
         />
 
@@ -65,6 +84,7 @@ export default function RegisterPage() {
           <Input
             label="Password"
             type="password"
+            name="password"
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -78,7 +98,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <Input label="Confirm Password" type="password" placeholder="••••••••" required />
+        <Input label="Confirm Password" type="password" name="confirmPassword" placeholder="••••••••" required />
 
         <div className={styles.checkboxContainer}>
           <label className={styles.checkboxLabel} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
@@ -87,8 +107,8 @@ export default function RegisterPage() {
           </label>
         </div>
 
-        <Button type="submit" fullWidth disabled={loading}>
-          {loading ? 'Creating...' : 'Sign Up'}
+        <Button type="submit" fullWidth disabled={isPending}>
+          {isPending ? 'Creating...' : 'Sign Up'}
         </Button>
       </form>
 
