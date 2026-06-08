@@ -1,6 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "baseUrl": ".",
     "rootDir": ".",
     "sourceMap": true,
     "declaration": false,
@@ -13,7 +14,10 @@
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "paths": {}
+    "paths": {
+      "@dispatchiq/api-client": ["libs/api-client/src/index.ts"],
+      "@dispatchiq/types": ["libs/types/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }

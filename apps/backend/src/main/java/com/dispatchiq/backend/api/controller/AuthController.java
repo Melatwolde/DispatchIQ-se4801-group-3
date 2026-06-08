@@ -5,12 +5,14 @@ import com.dispatchiq.backend.api.dto.request.RegisterRequest;
 import com.dispatchiq.backend.api.dto.response.AuthResponse;
 import com.dispatchiq.backend.service.AuthService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -25,6 +27,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(
             @Valid @RequestBody RegisterRequest request
     ) {
+        log.info("Received register request for email: {}", request.getEmail());
         return ResponseEntity.ok(service.register(request));
     }
 
@@ -32,6 +35,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request
     ) {
+        log.info("Received login request for email: {}", request.getEmail());
         return ResponseEntity.ok(service.login(request));
     }
 }

@@ -29,7 +29,8 @@ public class User implements UserDetails {
 
     private String fullName;
     
-    private String phone;
+    @Column(columnDefinition = "BIGINT")
+    private Long phone;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -45,7 +46,7 @@ public class User implements UserDetails {
     }
 
     @Builder
-    public User(String email, String passwordHash, String fullName, String phone, Role role) {
+    public User(String email, String passwordHash, String fullName, Long phone, Role role) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.fullName = fullName;
@@ -85,11 +86,11 @@ public class User implements UserDetails {
         this.fullName = fullName;
     }
 
-    public String getPhone() {
+    public Long getPhone() {
         return phone;
     }
 
-    public void setPhone(String phone) {
+    public void setPhone(Long phone) {
         this.phone = phone;
     }
 

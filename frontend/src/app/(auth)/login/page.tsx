@@ -1,26 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import { Navigation2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '../../../components/ui/Button';
-import { Input, Select } from '../../../components/ui/Input';
+import { Input } from '../../../components/ui/Input';
 import styles from './../Auth.module.css';
+import { login } from '../../../lib/server-actions/auth.actions';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState('user');
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-    // Mock login delay
-    setTimeout(() => {
-      setLoading(false);
-      router.push(`/dashboard/${role}`);
-    }, 800);
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    
+    startTransition(async () => {
+      const result = await login(formData);
+      // The action either redirects on success or returns an error
+      if (result && !result.success) {
+        setError(result.error);
+      }
+    });
   };
 
   return (
@@ -34,40 +37,33 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {error && <div className={styles.errorAlert} style={{ color: 'red', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
+        
         <Input 
           label="Email" 
           type="email" 
+          name="email"
           placeholder="you@example.com" 
           required 
         />
         <Input 
           label="Password" 
           type="password" 
+          name="password"
           placeholder="••••••••" 
           required 
-        />
-        
-        <Select 
-          label="Select Role (For Demo)"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          options={[
-            { value: 'admin', label: 'Admin' },
-            { value: 'dispatcher', label: 'Dispatcher' },
-            { value: 'user', label: 'User' }
-          ]}
         />
 
         <div className={styles.checkboxContainer} style={{ justifyContent: 'space-between' }}>
           <label className={styles.checkboxLabel} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" className={styles.checkbox} />
+            <input type="checkbox" className={styles.checkbox} name="remember" />
             Remember me
           </label>
           <Link href="#" className={styles.link}>Forgot password?</Link>
         </div>
 
-        <Button type="submit" fullWidth disabled={loading}>
-          {loading ? 'Logging in...' : 'Log In'}
+        <Button type="submit" fullWidth disabled={isPending}>
+          {isPending ? 'Logging in...' : 'Log In'}
         </Button>
       </form>
 

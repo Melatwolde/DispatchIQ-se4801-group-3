@@ -62,7 +62,7 @@ class SecurityIntegrationTest {
                 registerRequest.setEmail("dispatcher2@dispatchiq.com");
                 registerRequest.setPassword("securePass");
                 registerRequest.setFullName("Test Dispatcher 2");
-                registerRequest.setPhone("0987654321");
+                registerRequest.setPhone("987654321");
                 registerRequest.setRole(Role.DISPATCHER);
 
                 mockMvc.perform(post("/api/v1/auth/register")
