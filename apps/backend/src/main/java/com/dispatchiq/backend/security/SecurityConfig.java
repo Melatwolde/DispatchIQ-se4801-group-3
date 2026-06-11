@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
+                    
                         .requestMatchers(
                                 "/api/v1/auth/**",
                                 "/auth/**",
@@ -42,6 +43,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/actuator/health"
+                                
                         ).permitAll()
 
                         // Admin-only: system config, audit logs, user management
@@ -81,7 +83,8 @@ public class SecurityConfig {
         
         // Allow Nx frontend domains
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:4200"
+                "http://localhost:4200",
+                "http://localhost:3000"
         ));
         
         configuration.setAllowedMethods(List.of(

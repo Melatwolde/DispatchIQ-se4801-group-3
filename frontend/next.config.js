@@ -11,8 +11,14 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        // If the frontend requests /v1/auth/login, route it smoothly to /api/v1/auth/login
+        source: '/v1/:path*',
+        destination: 'http://localhost:8080/api/v1/:path*',
+      },
+      {
+        // Fallback catch-all for standard API paths
         source: '/api/v1/:path*',
-        destination: 'http://localhost:8080/api/:path*',
+        destination: 'http://localhost:8080/api/v1/:path*',
       },
     ];
   },

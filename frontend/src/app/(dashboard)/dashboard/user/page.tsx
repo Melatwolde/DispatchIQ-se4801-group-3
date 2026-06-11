@@ -1,11 +1,14 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation'; 
 import { StatCard } from '../../../../components/ui/StatCard';
 import { DataTable } from '../../../../components/ui/DataTable';
-import { Package, Clock, CheckCircle } from 'lucide-react';
+import { Package, Clock, CheckCircle, Plus } from 'lucide-react'; 
 
 export default function UserDashboard() {
+  const router = useRouter(); 
+
   const deliveriesData = [
     { id: '#DEL-104', date: 'Oct 12, 2026', origin: 'Warehouse A', status: 'Completed' },
     { id: '#DEL-105', date: 'Oct 14, 2026', origin: 'Partner Store B', status: 'Completed' },
@@ -24,15 +27,44 @@ export default function UserDashboard() {
 
   return (
     <div>
+      {/* Statistics Row */}
       <div className="grid-container" style={{ marginBottom: '32px' }}>
         <div className="col-span-4"><StatCard title="Active Deliveries" value="0" icon={Package} /></div>
         <div className="col-span-4"><StatCard title="Pending Review" value="1" icon={Clock} /></div>
         <div className="col-span-4"><StatCard title="Completed Life-time" value="84" icon={CheckCircle} /></div>
       </div>
 
-      <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 600 }}>Delivery History</h2>
+      
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '20px' 
+      }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>Delivery History</h2>
+        
+        
+        <button 
+          onClick={() => router.push('/dashboard/user/create-delivery')}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            backgroundColor: '#2563eb', 
+            color: '#fff', 
+            border: 'none', 
+            padding: '10px 16px', 
+            borderRadius: '6px', 
+            fontWeight: 600, 
+            cursor: 'pointer' 
+          }}
+        >
+          <Plus size={16} />
+          Create Delivery
+        </button>
       </div>
+
+      {/* Data Table */}
       <DataTable 
         data={deliveriesData} 
         columns={columns}

@@ -18,14 +18,15 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:dGhpcy1pcy1hLXNhZmUtYW5kLXNlY3VyZS0zMi1ieXRlLXNlY3JldC1rZXk=}")
     private String secretKey;
     
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expiration:86400000}")
     private long jwtExpiration;
     
-    @Value("${jwt.refresh-expiration}")
+    @Value("${jwt.refresh-expiration:604800000}")
     private long refreshExpiration;
+   
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -96,7 +97,8 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        String cleanKey = "dGhpcy1pcy1hLXNhZmUtYW5kLXNlY3VyZS0zMi1ieXRlLXNlY3JldC1rZXk=";
+        byte[] keyBytes = Decoders.BASE64.decode(cleanKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

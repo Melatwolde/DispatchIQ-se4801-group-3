@@ -32,8 +32,11 @@ public class User implements UserDetails {
     @Column(columnDefinition = "BIGINT")
     private Long phone;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+   @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "user_role")
+    @org.hibernate.annotations.ColumnTransformer(
+        write = "?::user_role"
+    )
     private Role role;
 
     @CreationTimestamp
