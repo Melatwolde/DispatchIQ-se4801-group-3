@@ -17,7 +17,7 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
 
 jwt:
-  secret: ${JWT_SECRET:dev-secret-change-in-prod}
+  secret: ${JWT_SECRET:dGhpcy1pcy1hLXNhZmUtYW5kLXNlY3VyZS0zMi1ieXRlLXNlY3JldC1rZXk=}
   expiration: 86400000
   refresh-expiration: 604800000
   

@@ -5,7 +5,8 @@ import { LoginRequest, RegisterRequest, AuthResponse } from '@dispatchiq/types';
 export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await api.post<AuthResponse>('/v1/auth/login', data);
+     
+      const response = await api.post<AuthResponse>('/auth/login', data);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -14,7 +15,8 @@ export const authService = {
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
     try {
-      const response = await api.post<AuthResponse>('/v1/auth/register', data);
+      
+      const response = await api.post<AuthResponse>('/auth/register', data);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -25,7 +27,7 @@ export const authService = {
     try {
       await api.post('/auth/logout');
     } catch (error) {
-      // Ignored for logout usually, but we want it typed
+      
     }
   },
 };

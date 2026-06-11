@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/deliveries")
+@org.springframework.web.bind.annotation.CrossOrigin(origins = "http://localhost:3000")
 @Validated
 @Tag(name = "deliveries", description = "Delivery CRUD and list operations")
 public class DeliveryController {
