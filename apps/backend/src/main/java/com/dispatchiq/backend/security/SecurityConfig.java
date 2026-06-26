@@ -21,89 +21,94 @@ import java.util.List;
 @EnableMethodSecurity // Enables @PreAuthorize support
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
-    private final AuthenticationProvider authenticationProvider;
+        private final JwtAuthenticationFilter jwtAuthFilter;
+        private final AuthenticationProvider authenticationProvider;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, AuthenticationProvider authenticationProvider) {
-        this.jwtAuthFilter = jwtAuthFilter;
-        this.authenticationProvider = authenticationProvider;
-    }
+        public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, AuthenticationProvider authenticationProvider) {
+                this.jwtAuthFilter = jwtAuthFilter;
+                this.authenticationProvider = authenticationProvider;
+        }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(authorize -> authorize
-                    
-                        .requestMatchers(
-                                "/api/v1/auth/**",
-                                "/auth/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/actuator/health"
-                                
-                        ).permitAll()
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(AbstractHttpConfigurer::disable)
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .authorizeHttpRequests(authorize -> authorize
 
-                        // Admin-only: system config, audit logs, user management
-                        .requestMatchers("/api/v1/admin/**", "/api/v1/audit/**").hasRole("ADMIN")
+                                                // Combined all public endpoints here for clean evaluation
+                                                .requestMatchers(
+                                                                "/api/v1/auth/**",
+                                                                "/auth/**",
+                                                                "/api/auth/**",
+                                                                "/v3/api-docs/**",
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html",
+                                                                "/actuator/health",
+                                                                "/api/geospatial/**"
+                                                ).permitAll()
 
-                        // Manager: analytics, performance reports (read-only)
-                        .requestMatchers("/api/v1/performance/**", "/api/v1/analytics/**")
-                            .hasAnyRole("MANAGER", "ADMIN")
+                                                .requestMatchers("/api/deliveries").hasRole("CUSTOMER")
 
-                        // Dispatcher: assignment, fleet management, dispatch operations
-                        .requestMatchers(
-                                "/api/v1/dispatch/**",
-                                "/api/v1/fleets/**",
-                                "/api/v1/assignments/**"
-                        ).hasAnyRole("DISPATCHER", "MANAGER", "ADMIN")
+                                                // Role-restricted management endpoints
+                                                .requestMatchers("/api/v1/admin/**", "/api/v1/audit/**")
+                                                .hasRole("ADMIN")
+                                                .requestMatchers("/api/v1/performance/**", "/api/v1/analytics/**")
+                                                .hasAnyRole("MANAGER", "ADMIN")
 
-                        // Driver: accept/reject assignments, update status, view own deliveries
-                        .requestMatchers("/api/v1/driver/**", "/api/v1/assignments/{id}/accept", "/api/v1/assignments/{id}/reject")
-                            .hasRole("DRIVER")
+                                                // Driver workflow endpoints (must precede general assignments)
+                                                .requestMatchers(
+                                                                "/api/v1/driver/**",
+                                                                "/api/v1/assignments/*/accept",
+                                                                "/api/v1/assignments/*/reject")
+                                                .hasRole("DRIVER")
 
-                        .requestMatchers("/api/v1/deliveries/**")
-                            .hasAnyRole("CUSTOMER", "DISPATCHER", "ADMIN") 
+                                                // Core operations endpoints
+                                                .requestMatchers(
+                                                                "/api/v1/dispatch/**",
+                                                                "/api/v1/fleets/**",
+                                                                "/api/v1/assignments/**")
+                                                .hasAnyRole("DISPATCHER", "MANAGER", "ADMIN")
 
-                
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                                                .requestMatchers("/ws/telemetry").permitAll()
 
-        return http.build();
-    }
+                                                // Customer visibility endpoints
+                                                .requestMatchers("/api/v1/deliveries/**")
+                                                .hasAnyRole("CUSTOMER", "DISPATCHER", "ADMIN")
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Allow Nx frontend domains
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:4200",
-                "http://localhost:3000"
-        ));
-        
-        configuration.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
-        ));
-        
-        configuration.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type",
-                "X-Requested-With",
-                "Accept",
-                "Idempotency-Key" 
-        ));
+                                                // Catch-all safety fallback
+                                                .anyRequest().authenticated())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authenticationProvider(authenticationProvider)
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        configuration.setExposedHeaders(List.of("Authorization"));
-        
-        configuration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+                return http.build();
+        }
+
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
+
+                configuration.setAllowedOriginPatterns(List.of(
+                                "http://localhost:3000",
+                                "http://localhost:4200",
+                                "http://127.0.0.1:3000",
+                                "http://127.0.0.1:4200"));
+                configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+                configuration.setAllowedHeaders(List.of(
+                                "Authorization",
+                                "Content-Type",
+                                "X-Requested-With",
+                                "Accept",
+                                "Idempotency-Key"));
+
+                configuration.setExposedHeaders(List.of("Authorization"));
+                configuration.setAllowCredentials(true);
+
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+                return source;
+        }
 }

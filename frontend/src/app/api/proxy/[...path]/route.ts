@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080/api/v1';
 
 export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
   return proxyRequest(request, params.path);

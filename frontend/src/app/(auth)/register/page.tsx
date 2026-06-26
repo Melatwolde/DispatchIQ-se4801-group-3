@@ -28,12 +28,12 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    
+
     // Combine first and last name into fullName
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
     formData.set('fullName', `${firstName} ${lastName}`.trim());
-    
+
     // Check if passwords match
     const confirmPassword = formData.get('confirmPassword') as string;
     if (password !== confirmPassword) {
@@ -61,7 +61,7 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit}>
         {error && <div className={styles.errorAlert} style={{ color: 'red', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
-        
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <Input label="First Name" name="firstName" placeholder="John" required />
           <Input label="Last Name" name="lastName" placeholder="Doe" required />

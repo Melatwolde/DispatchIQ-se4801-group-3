@@ -1,8 +1,11 @@
 package com.dispatchiq.backend.service.impl;
 
 import com.dispatchiq.backend.api.dto.DeliveryDto;
+import com.dispatchiq.backend.api.dto.request.DeliveryRequestDTO;
 import com.dispatchiq.backend.api.mapper.DeliveryMapper;
 import com.dispatchiq.backend.entity.Delivery;
+import com.dispatchiq.backend.entity.DeliveryStatus;
+import com.dispatchiq.backend.entity.Role;
 import com.dispatchiq.backend.entity.User;
 import com.dispatchiq.backend.repository.DeliveryRepository;
 import com.dispatchiq.backend.repository.UserRepository;
@@ -64,6 +67,52 @@ public class InMemoryDeliveryService implements DeliveryService {
         );
 
         return DeliveryMapper.withId(UUID.randomUUID().toString(), dto);
+    }
+
+    @Override
+    public DeliveryDto createFromRequest(DeliveryRequestDTO request) {
+        User customer = resolveCustomer();
+        DeliveryStatus status = request.status() != null ? request.status() : DeliveryStatus.PENDING;
+
+        deliveryRepository.saveDeliveryWithCoords(
+                customer.getId(),
+                request.pickupAddress(),
+                request.pickupLongitude(),
+                request.pickupLatitude(),
+                request.dropoffAddress(),
+                request.dropoffLongitude(),
+                request.dropoffLatitude(),
+                null,
+                null,
+                request.urgency().toPriority().name(),
+                status.name(),
+                request.notes()
+        );
+
+        DeliveryDto dto = new DeliveryDto(
+                UUID.randomUUID().toString(),
+                status,
+                request.pickupAddress(),
+                request.pickupLatitude(),
+                request.pickupLongitude(),
+                request.dropoffAddress(),
+                request.dropoffLatitude(),
+                request.dropoffLongitude(),
+                null,
+                null,
+                request.urgency().toPriority(),
+                request.notes()
+        );
+        return dto;
+    }
+
+    private User resolveCustomer() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails userDetails) {
+            return userRepository.findByEmailIgnoreCase(userDetails.getUsername())
+                    .orElseThrow(() -> new UsernameNotFoundException("Authenticated customer not found"));
+        }
+        throw new UsernameNotFoundException("Authenticated customer required");
     }
 
     @Override
