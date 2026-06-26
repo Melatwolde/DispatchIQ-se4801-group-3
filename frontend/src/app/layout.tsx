@@ -1,7 +1,8 @@
 import { Inter } from 'next/font/google';
 import './global.css';
 import QueryProvider from '../lib/providers/QueryProvider';
-
+// @ts-ignore: no type declarations for leaflet CSS side-effect import
+import 'leaflet/dist/leaflet.css';
 
 const inter = Inter({ subsets: ['latin'] });
 

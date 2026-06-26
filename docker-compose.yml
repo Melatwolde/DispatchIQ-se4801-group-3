@@ -1,6 +1,8 @@
+version: '3.8'
+
 services:
   postgres:
-    image: postgis/postgis:16-3.4  
+    image: postgis/postgis:16-3.4
     container_name: dispatchiq-postgres
     environment:
       POSTGRES_DB: dispatchiq
@@ -11,6 +13,22 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - dispatchiq_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dispatchiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: dispatchiq-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - dispatchiq_network
 
   backend:
     build:
@@ -26,9 +44,18 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres123
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_ROUTING_OSRM_URL: http://dispatchiq-osrm:5000
+      SPRING_FLYWAY_REPAIR_ON_MIGRATE: "true"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
+    networks:
+      - dispatchiq_network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -41,6 +68,25 @@ services:
     depends_on:
       - postgres
     restart: unless-stopped
+    networks:
+      - dispatchiq_network
+
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend
+    container_name: dispatchiq-osrm
+    ports:
+      - "5000:5000"
+    volumes:
+      - ~/osrm-data:/data:Z
+    command: osrm-routed --algorithm mld /data/ethiopia-260610.osrm
+    restart: unless-stopped
+    networks:
+      - dispatchiq_network
+
+networks:
+  dispatchiq_network:
+    name: dispatchiq-network
+    driver: bridge
 
 volumes:
   postgres_data:

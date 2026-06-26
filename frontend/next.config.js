@@ -16,6 +16,10 @@ const nextConfig = {
         destination: 'http://localhost:8080/api/v1/:path*',
       },
       {
+        source: '/api/deliveries/:path*',
+        destination: 'http://localhost:8080/api/deliveries/:path*',
+      },
+      {
         // Fallback catch-all for standard API paths
         source: '/api/v1/:path*',
         destination: 'http://localhost:8080/api/v1/:path*',

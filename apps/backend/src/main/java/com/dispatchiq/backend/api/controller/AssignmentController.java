@@ -1,66 +1,96 @@
 package com.dispatchiq.backend.api.controller;
 
+import com.dispatchiq.backend.api.dto.AssignmentAcceptResponse;
 import com.dispatchiq.backend.api.dto.AssignmentRequest;
 import com.dispatchiq.backend.api.dto.AssignmentResponse;
+import com.dispatchiq.backend.entity.User;
 import com.dispatchiq.backend.idempotency.IdempotencyService;
+import com.dispatchiq.backend.repository.UserRepository;
+import com.dispatchiq.backend.service.AssignmentAcceptService;
 import com.dispatchiq.backend.service.AssignmentService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.annotation.Validated;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/assignments")
+@RequestMapping("/api/v1/assignments")
 @Validated
 @Tag(name = "assignments", description = "Assignment operations (idempotent)")
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
+    private final AssignmentAcceptService assignmentAcceptService;
     private final IdempotencyService idempotencyService;
+    private final UserRepository userRepository;
 
-    public AssignmentController(AssignmentService assignmentService, IdempotencyService idempotencyService) {
+    public AssignmentController(
+            AssignmentService assignmentService,
+            AssignmentAcceptService assignmentAcceptService,
+            IdempotencyService idempotencyService,
+            UserRepository userRepository
+    ) {
         this.assignmentService = assignmentService;
+        this.assignmentAcceptService = assignmentAcceptService;
         this.idempotencyService = idempotencyService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
-    public ResponseEntity<?> createAssignment(
+    public ResponseEntity<AssignmentResponse> createAssignment(
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody AssignmentRequest request
     ) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Idempotency-Key header is required");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        boolean acquired = idempotencyService.acquire(idempotencyKey);
-        if (!acquired) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body("Idempotency key already in use");
+        if (!idempotencyService.acquire(idempotencyKey)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
         }
-        AssignmentResponse resp = assignmentService.assign(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+        return ResponseEntity.status(HttpStatus.CREATED).body(assignmentService.assign(request));
     }
 
     @PutMapping("/{publicId}/reassign")
-    public ResponseEntity<?> reassign(
+    public ResponseEntity<AssignmentResponse> reassign(
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @PathVariable("publicId") String publicId,
             @Valid @RequestBody AssignmentRequest request
     ) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Idempotency-Key header is required");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        boolean acquired = idempotencyService.acquire(idempotencyKey);
-        if (!acquired) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body("Idempotency key already in use");
+        if (!idempotencyService.acquire(idempotencyKey)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
         }
-        AssignmentResponse resp = assignmentService.reassign(publicId, request);
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(assignmentService.reassign(publicId, request));
+    }
+
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<AssignmentAcceptResponse> acceptAssignment(@PathVariable("id") UUID id) {
+        UUID driverId = resolveAuthenticatedDriverId();
+        AssignmentAcceptResponse response = assignmentAcceptService.acceptAssignment(id, driverId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<AssignmentResponse> rejectAssignment(@PathVariable("id") UUID id) {
+        UUID driverId = resolveAuthenticatedDriverId();
+        AssignmentResponse response = assignmentService.reject(id, driverId);
+        return ResponseEntity.ok(response);
+    }
+
+    private UUID resolveAuthenticatedDriverId() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email = principal instanceof UserDetails ud ? ud.getUsername() : principal.toString();
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Authenticated driver not found"));
+        return user.getId();
     }
 }
