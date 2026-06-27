@@ -11,10 +11,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/fleets")
@@ -38,5 +40,11 @@ public class FleetController {
     public ResponseEntity<Page<FleetDto>> list(@PageableDefault(size = 20) Pageable pageable) {
         Page<FleetDto> page = fleetService.list(pageable);
         return ResponseEntity.ok(page);
+    }
+
+    @PostMapping("/dispatchers/{userId}/approve")
+    public ResponseEntity<Void> approveDispatcher(@PathVariable UUID userId) {
+        fleetService.approveDispatcher(userId);
+        return ResponseEntity.ok().build();
     }
 }

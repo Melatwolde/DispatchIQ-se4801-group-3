@@ -1,54 +1,34 @@
-package com.dispatchiq.backend.api.dto.request;
+package com.dispatchiq.backend.api.dto;
 
-import com.dispatchiq.backend.entity.Role;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.util.UUID;
 
-public class RegisterRequest {
-
-    @NotBlank
-    @Email
-    private String email;
-
-    @NotBlank
-    private String password;
-
-    @NotBlank
-    private String fullName;
-
-    private String phone;
-
-    @NotNull
-    private Role role;
-
+public class VehicleDto {
+    private UUID id;
     private String licensePlate;
     private String vin;
+    private UUID driverId;
     private String capacity;
     private String currentLocation;
     private String maintenanceStatus;
     private String vehicleStatus;
+    private LocalDate lastMaintenanceDate;
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    // --- Constructors ---
+    public VehicleDto() {}
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
-
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
+    // --- Getters and Setters ---
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getLicensePlate() { return licensePlate; }
     public void setLicensePlate(String licensePlate) { this.licensePlate = licensePlate; }
 
     public String getVin() { return vin; }
     public void setVin(String vin) { this.vin = vin; }
+
+    public UUID getDriverId() { return driverId; }
+    public void setDriverId(UUID driverId) { this.driverId = driverId; }
 
     public String getCapacity() { return capacity; }
     public void setCapacity(String capacity) { this.capacity = capacity; }
@@ -61,4 +41,7 @@ public class RegisterRequest {
 
     public String getVehicleStatus() { return vehicleStatus; }
     public void setVehicleStatus(String vehicleStatus) { this.vehicleStatus = vehicleStatus; }
+
+    public LocalDate getLastMaintenanceDate() { return lastMaintenanceDate; }
+    public void setLastMaintenanceDate(LocalDate lastMaintenanceDate) { this.lastMaintenanceDate = lastMaintenanceDate; }
 }

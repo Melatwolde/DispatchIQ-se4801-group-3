@@ -32,12 +32,15 @@ public class User implements UserDetails {
     @Column(columnDefinition = "BIGINT")
     private Long phone;
 
-   @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "user_role")
     @org.hibernate.annotations.ColumnTransformer(
+        read = "role::text",
         write = "?::user_role"
     )
     private Role role;
+
+    private String onboardingStatus = "APPROVED";
 
     @CreationTimestamp
     private Timestamp createdAt;
@@ -49,12 +52,13 @@ public class User implements UserDetails {
     }
 
     @Builder
-    public User(String email, String passwordHash, String fullName, Long phone, Role role) {
+    public User(String email, String passwordHash, String fullName, Long phone, Role role, String onboardingStatus) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.fullName = fullName;
         this.phone = phone;
         this.role = role;
+        this.onboardingStatus = onboardingStatus != null ? onboardingStatus : "APPROVED";
     }
 
     public UUID getId() {
@@ -105,6 +109,14 @@ public class User implements UserDetails {
         this.role = role;
     }
 
+    public String getOnboardingStatus() {
+        return onboardingStatus;
+    }
+
+    public void setOnboardingStatus(String onboardingStatus) {
+        this.onboardingStatus = onboardingStatus;
+    }
+
     public Timestamp getCreatedAt() {
         return createdAt;
     }
@@ -153,6 +165,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return "APPROVED".equalsIgnoreCase(onboardingStatus);
     }
 }

@@ -15,7 +15,14 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   fullName: z.string().min(2),
+  phone: z.string().optional(),
   role: z.enum(['ADMIN', 'DISPATCHER', 'DRIVER', 'MANAGER', 'CUSTOMER']),
+  licensePlate: z.string().optional(),
+  vin: z.string().optional(),
+  capacity: z.string().optional(),
+  currentLocation: z.string().optional(),
+  maintenanceStatus: z.string().optional(),
+  vehicleStatus: z.string().optional(),
 });
 
 function getDashboardRoute(role: UserRole): string {
@@ -46,30 +53,26 @@ export async function login(formData: FormData) {
   try {
     const response = await authService.login(validated.data);
 
-    // Set HTTP-only secure cookie
     const cookieStore = await cookies();
     cookieStore.set('auth_token', response.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+      maxAge: 60 * 60 * 24 * 7,
       path: '/',
     });
 
     const route = getDashboardRoute(response.role);
-
-    // ✅ CRITICAL: Call redirect() OUTSIDE try/catch or re-throw NEXT_REDIRECT
     redirect(route);
 
   } catch (error: any) {
-    // ✅ Re-throw redirect errors so Next.js can handle them
     if (error?.digest?.startsWith('NEXT_REDIRECT')) {
       throw error;
     }
-
-    // Log actual errors (network failures, validation, etc.)
     console.error('[Login Service Error]', error);
-    return { success: false, error: error.message || 'Login failed' };
+    
+    const backendMessage = error?.response?.data?.message || error?.message || 'Login failed';
+    return { success: false, error: backendMessage };
   }
 }
 
@@ -85,6 +88,10 @@ export async function register(formData: FormData) {
   try {
     const response = await authService.register(validated.data);
 
+    if (validated.data.role === 'DISPATCHER') {
+      return { success: true };
+    }
+
     const cookieStore = await cookies();
     cookieStore.set('auth_token', response.accessToken, {
       httpOnly: true,
@@ -95,17 +102,16 @@ export async function register(formData: FormData) {
     });
 
     const route = getDashboardRoute(response.role);
-
-    // ✅ Call redirect() outside try/catch or re-throw
     redirect(route);
 
   } catch (error: any) {
     if (error?.digest?.startsWith('NEXT_REDIRECT')) {
       throw error;
     }
-
     console.error('[Register Service Error]', error);
-    return { success: false, error: error.message || 'Registration failed' };
+
+    const backendMessage = error?.response?.data?.message || error?.message || 'Registration failed';
+    return { success: false, error: backendMessage };
   }
 }
 
@@ -113,4 +119,10 @@ export async function logout() {
   const cookieStore = await cookies();
   cookieStore.delete('auth_token');
   redirect('/login');
+}
+
+export async function getAuthToken() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth_token')?.value;
+  return token || null;
 }

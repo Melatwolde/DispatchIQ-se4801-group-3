@@ -19,12 +19,13 @@ export default function LoginPage() {
     
     startTransition(async () => {
       const result = await login(formData);
-      // The action either redirects on success or returns an error
       if (result && !result.success) {
         setError(result.error);
       }
     });
   };
+
+  const isPendingApproval = error?.toLowerCase().includes('pending');
 
   return (
     <>
@@ -37,7 +38,23 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit}>
-        {error && <div className={styles.errorAlert} style={{ color: 'red', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
+        {error && (
+          <div 
+            className={styles.errorAlert} 
+            style={{ 
+              color: isPendingApproval ? '#b45309' : 'red', 
+              backgroundColor: isPendingApproval ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+              border: isPendingApproval ? '1px solid rgba(245, 158, 11, 0.3)' : 'none',
+              padding: isPendingApproval ? '12px' : '0',
+              borderRadius: isPendingApproval ? '6px' : '0',
+              marginBottom: '16px', 
+              fontSize: '14px',
+              lineHeight: '1.4'
+            }}
+          >
+            {isPendingApproval ? `⏳ ${error}` : error}
+          </div>
+        )}
         
         <Input 
           label="Email" 

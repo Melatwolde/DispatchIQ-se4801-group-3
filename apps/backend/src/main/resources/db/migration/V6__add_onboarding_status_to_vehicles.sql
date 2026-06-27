@@ -1,0 +1,1 @@
+ALTER TABLE vehicles ADD onboarding_status VARCHAR(50) DEFAULT 'PENDING';
