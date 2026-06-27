@@ -6,9 +6,9 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import toast, { Toaster } from 'react-hot-toast';
 import { Check, ChevronRight, Clock, MapPin, Navigation, X } from 'lucide-react';
 
-const BACKEND_URL = 'http://localhost:8080';
-const OSRM_URL = 'http://localhost:5000';
-const WS_URL = 'ws://localhost:8080/ws/telemetry';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+const OSRM_URL = process.env.NEXT_PUBLIC_OSRM_URL || 'http://localhost:5000';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws/telemetry';
 const TELEMETRY_INTERVAL_MS = 15_000;
 const OFFLINE_QUEUE_KEY = 'dispatchiq:driver:accept-queue';
 
