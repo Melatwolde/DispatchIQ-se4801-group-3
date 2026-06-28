@@ -62,4 +62,4 @@ jobs:
           SPRING_DATASOURCE_USERNAME: test_user
           SPRING_DATASOURCE_PASSWORD: test_password
         run: |
-          ./mvnw clean test -Dtest=SecurityAuthTest
+          ./mvn clean test -Dtest=SecurityAuthTest
