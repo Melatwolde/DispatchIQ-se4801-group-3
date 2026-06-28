@@ -50,16 +50,16 @@ jobs:
           cache: 'maven'
           cache-dependency-path: apps/backend/pom.xml
 
-      # Explicitly pointing to the subfolder ensures chmod won't fail
+      # Fix 1: Make the root wrapper executable
       - name: Make Maven Wrapper Executable
-        run: chmod +x ./apps/backend/mvnw
+        run: chmod +x ./mvnw
 
+      # Fix 2: Run the root wrapper but tell it to execute the child backend project module
       - name: Execute Security Infrastructure Tests
-        working-directory: apps/backend
         env:
           SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/my_security_test_db
           SPRING_DATASOURCE_USERNAME: test_user
           SPRING_DATASOURCE_PASSWORD: test_password
         run: |
-          ./mvn clean test -Dtest=SecurityAuthTest
+          ./mvnw -pl apps/backend test -Dtest=SecurityAuthTest
