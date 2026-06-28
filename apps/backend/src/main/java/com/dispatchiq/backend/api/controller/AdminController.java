@@ -48,7 +48,7 @@ public class AdminController {
         }
 
         // Execute the search
-        List<User> pendingUsers = userRepository.findByRoleAndOnboardingStatus(Role.DISPATCHER, "PENDING");
+        List<User> pendingUsers = userRepository.findByRoleAndOnboardingStatus(Role.DISPATCHER, "PENDING_APPROVAL");
         log.info("Query returned {} matches", pendingUsers.size());
         log.info("--- DEBUGGING END ---");
 
