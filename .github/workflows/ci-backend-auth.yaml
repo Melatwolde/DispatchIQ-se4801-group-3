@@ -23,21 +23,6 @@ jobs:
   security-test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: my_security_test_db
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -50,16 +35,13 @@ jobs:
           cache: 'maven'
           cache-dependency-path: apps/backend/pom.xml
 
-      # Fix 1: Make the root wrapper executable
+      # Corrected: Targets the single wrapper utility located at your workspace root
       - name: Make Maven Wrapper Executable
         run: chmod +x ./mvnw
 
-      # Fix 2: Run the root wrapper but tell it to execute the child backend project module
+      # Executes the root wrapper script while focusing compilation strictly on the child module
       - name: Execute Security Infrastructure Tests
         env:
           SPRING_PROFILES_ACTIVE: test
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/my_security_test_db
-          SPRING_DATASOURCE_USERNAME: test_user
-          SPRING_DATASOURCE_PASSWORD: test_password
         run: |
           ./mvnw -pl apps/backend test -Dtest=SecurityAuthTest
