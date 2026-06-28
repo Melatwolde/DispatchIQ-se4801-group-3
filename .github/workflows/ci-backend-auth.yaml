@@ -22,11 +22,6 @@ permissions:
 jobs:
   security-test:
     runs-on: ubuntu-latest
-    
-    # Globally scope all steps in this job to run inside the backend folder
-    defaults:
-      run:
-        working-directory: apps/backend
 
     services:
       postgres:
@@ -53,13 +48,14 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          # Points the caching mechanism to the subfolder pom.xml
           cache-dependency-path: apps/backend/pom.xml
 
+      # Explicitly pointing to the subfolder ensures chmod won't fail
       - name: Make Maven Wrapper Executable
-        run: chmod +x ./mvnw
+        run: chmod +x ./apps/backend/mvnw
 
       - name: Execute Security Infrastructure Tests
+        working-directory: apps/backend
         env:
           SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/my_security_test_db
