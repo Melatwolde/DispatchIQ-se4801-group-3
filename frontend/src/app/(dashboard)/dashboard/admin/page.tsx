@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { RegisterVehicleModal } from './RegisterVehicleModal';
+import RegisterVehicleModal from './RegisterVehicleModal';
 import { ReviewPendingModal } from './ReviewPendingModal';
 import { StatCard } from '../../../../components/ui/StatCard';
 import { DataTable } from '../../../../components/ui/DataTable';

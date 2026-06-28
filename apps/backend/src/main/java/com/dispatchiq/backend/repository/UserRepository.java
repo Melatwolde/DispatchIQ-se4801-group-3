@@ -16,7 +16,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmailIgnoreCase(String email);
     boolean existsByEmailIgnoreCase(String email);
     
-    // We pass the role name as a plain text String to match the column transformer perfectly
-    @Query(value = "SELECT * FROM users WHERE role = ?1::user_role AND onboarding_status = ?2", nativeQuery = true)
-    List<User> findByRoleAndOnboardingStatus(Role role, String onboardingStatus);
+
+List<User> findByRoleAndOnboardingStatus(@Param("role") Role role, @Param("status") String onboardingStatus);
 }
