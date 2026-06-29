@@ -6,6 +6,9 @@ import com.dispatchiq.backend.api.dto.AssignmentResponse;
 import com.dispatchiq.backend.entity.User;
 import com.dispatchiq.backend.idempotency.IdempotencyService;
 import com.dispatchiq.backend.repository.UserRepository;
+import com.dispatchiq.backend.repository.AssignmentRepository;
+import com.dispatchiq.backend.entity.Assignment;
+import com.dispatchiq.backend.entity.Role;
 import com.dispatchiq.backend.service.AssignmentAcceptService;
 import com.dispatchiq.backend.service.AssignmentService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,17 +33,20 @@ public class AssignmentController {
     private final AssignmentAcceptService assignmentAcceptService;
     private final IdempotencyService idempotencyService;
     private final UserRepository userRepository;
+    private final AssignmentRepository assignmentRepository;
 
     public AssignmentController(
             AssignmentService assignmentService,
             AssignmentAcceptService assignmentAcceptService,
             IdempotencyService idempotencyService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            AssignmentRepository assignmentRepository
     ) {
         this.assignmentService = assignmentService;
         this.assignmentAcceptService = assignmentAcceptService;
         this.idempotencyService = idempotencyService;
         this.userRepository = userRepository;
+        this.assignmentRepository = assignmentRepository;
     }
 
     @PostMapping
@@ -74,16 +80,56 @@ public class AssignmentController {
 
     @PostMapping("/{id}/accept")
     public ResponseEntity<AssignmentAcceptResponse> acceptAssignment(@PathVariable("id") UUID id) {
-        UUID driverId = resolveAuthenticatedDriverId();
+        UUID driverId = resolveDriverIdForAcceptReject(id);
+        System.out.println("Accept requested for assignmentId=" + id + " on behalf of driverId=" + driverId);
         AssignmentAcceptResponse response = assignmentAcceptService.acceptAssignment(id, driverId);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{id}/reject")
     public ResponseEntity<AssignmentResponse> rejectAssignment(@PathVariable("id") UUID id) {
-        UUID driverId = resolveAuthenticatedDriverId();
+        UUID driverId = resolveDriverIdForAcceptReject(id);
+        System.out.println("Reject requested for assignmentId=" + id + " on behalf of driverId=" + driverId);
         AssignmentResponse response = assignmentService.reject(id, driverId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/my-pending")
+    public ResponseEntity<java.util.List<com.dispatchiq.backend.api.dto.PendingAssignmentDto>> getMyPendingAssignments() {
+        UUID driverId = resolveAuthenticatedDriverId();
+        return ResponseEntity.ok(assignmentService.getPendingAssignments(driverId));
+    }
+
+    @GetMapping("/driver/{driverId}")
+    public ResponseEntity<java.util.List<com.dispatchiq.backend.api.dto.PendingAssignmentDto>> getDriverAssignments(@PathVariable("driverId") UUID driverId) {
+        System.out.println("Fetching assignments for driverId=" + driverId);
+        return ResponseEntity.ok(assignmentService.getPendingAssignments(driverId));
+    }
+
+    // --- ADD THIS ENDPOINT FOR DISPATCHER TO VIEW THE AUTOMATCHED LIST ---
+    @GetMapping("/dispatcher-review")
+    public ResponseEntity<java.util.List<com.dispatchiq.backend.api.dto.PendingAssignmentDto>> getDispatcherReviewQueue() {
+        return ResponseEntity.ok(assignmentService.getAssignmentsForDispatcherApproval());
+    }
+
+    // --- ADD THIS ENDPOINT FOR DISPATCHER TO APPROVE AN AUTOMATCHED ITEM ---
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<AssignmentResponse> approveAssignment(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(assignmentService.approveByDispatcher(id));
+    }
+
+    private UUID resolveDriverIdForAcceptReject(UUID assignmentId) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email = principal instanceof UserDetails ud ? ud.getUsername() : principal.toString();
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Authenticated user not found"));
+        System.out.println("resolveDriverIdForAcceptReject: user=" + user.getEmail() + ", role=" + user.getRole());
+        if (user.getRole() == Role.DISPATCHER || user.getRole() == Role.ADMIN || user.getRole() == Role.MANAGER) {
+            Assignment assignment = assignmentRepository.findById(assignmentId)
+                    .orElseThrow(() -> new com.dispatchiq.backend.api.exception.AssignmentValidationException("Assignment not found for dispatcher action"));
+            return assignment.getDriver().getId();
+        }
+        return user.getId();
     }
 
     private UUID resolveAuthenticatedDriverId() {

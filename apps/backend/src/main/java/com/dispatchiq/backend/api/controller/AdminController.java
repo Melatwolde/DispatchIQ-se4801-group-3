@@ -108,4 +108,15 @@ public class AdminController {
             "smsStatus", "Dispatched"
         ));
     }
+
+
+    @GetMapping("/all-users")
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userRepository.findAll());
+    }
+
+    @GetMapping("/all-dispatchers")
+    public ResponseEntity<List<User>> getAllDispatchers() {
+        return ResponseEntity.ok(userRepository.findByRole(Role.DISPATCHER));
+    }
 }

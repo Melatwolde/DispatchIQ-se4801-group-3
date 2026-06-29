@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { deliveryService } from '@dispatchiq/api-client';
-import { CreateDeliveryInput } from '@dispatchiq/types';
+import { deliveryService } from '../../../../libs/api-client/src';
+import { CreateDeliveryInput } from '../../../../libs/types/src';
 
 export function useUpdateDelivery() {
   const queryClient = useQueryClient();

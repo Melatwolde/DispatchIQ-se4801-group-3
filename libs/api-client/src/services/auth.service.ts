@@ -1,6 +1,6 @@
 import api from '../lib/axios-instance';
 import { handleApiError } from '../lib/error-handler';
-import { LoginRequest, RegisterRequest, AuthResponse } from '@dispatchiq/types';
+import { LoginRequest, RegisterRequest, AuthResponse } from '../../../types/src';
 
 export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {

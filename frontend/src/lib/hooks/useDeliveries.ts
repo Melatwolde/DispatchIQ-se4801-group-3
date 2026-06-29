@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { deliveryService } from '@dispatchiq/api-client';
-import { DeliveryFilters } from '@dispatchiq/types';
+import { deliveryService } from '../../../../libs/api-client/src';
+import { DeliveryFilters } from '../../../../libs/types/src';
 
 export function useDeliveries(filters?: DeliveryFilters) {
   return useQuery({

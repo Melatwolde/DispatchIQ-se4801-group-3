@@ -30,14 +30,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleSidebar }) => {
           <input type="text" placeholder="Search..." />
         </div>
         
-        <button className={styles.iconBtn}>
-          <Bell size={20} />
-          <span className={styles.badge}></span>
-        </button>
         
-        <button className={styles.iconBtn}>
-          <Moon size={20} />
-        </button>
       </div>
     </header>
   );

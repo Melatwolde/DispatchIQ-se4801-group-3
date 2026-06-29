@@ -32,51 +32,52 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers(
-                    "/api/v1/auth/**",
-                    "/auth/**",
-                    "/api/auth/**",
-                    "/v3/api-docs/**",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/actuator/health",
-                    "/api/geospatial/**"
-                ).permitAll()
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/api/v1/auth/**",
+                                "/auth/**",
+                                "/api/auth/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/actuator/health",
+                                "/api/geospatial/**")
+                        .permitAll()
 
-                .requestMatchers("/api/deliveries").hasAuthority("CUSTOMER")
+                        .requestMatchers("/api/deliveries/**").hasAnyAuthority("CUSTOMER", "DISPATCHER", "ADMIN")
 
-                // Fixed: Changed hasRole to hasAuthority
-                .requestMatchers("/api/v1/admin/**", "/api/v1/audit/**")
-                .hasAuthority("ADMIN")
-                
-                .requestMatchers("/api/v1/performance/**", "/api/v1/analytics/**")
-                .hasAnyAuthority("MANAGER", "ADMIN")
+                        // Fixed: Changed hasRole to hasAuthority
+                        .requestMatchers("/api/v1/admin/**", "/api/v1/audit/**")
+                        .hasAuthority("ADMIN")
 
-                .requestMatchers(
-                    "/api/v1/driver/**",
-                    "/api/v1/assignments/*/accept",
-                    "/api/v1/assignments/*/reject")
-                .hasAuthority("DRIVER")
+                        .requestMatchers("/api/v1/performance/**", "/api/v1/analytics/**")
+                        .hasAnyAuthority("MANAGER", "ADMIN")
 
-                .requestMatchers(
-                    "/api/v1/dispatch/**",
-                    "/api/v1/fleets/**",
-                    "/api/v1/assignments/**")
-                .hasAnyAuthority("DISPATCHER", "MANAGER", "ADMIN")
+                        .requestMatchers(
+                                "/api/v1/driver/**",
+                                "/api/v1/assignments/my-pending",
+                                "/api/v1/assignments/*/accept",
+                                "/api/v1/assignments/*/reject")
+                        .hasAnyAuthority("DRIVER", "DISPATCHER")
 
-                .requestMatchers("/ws/telemetry").permitAll()
+                        .requestMatchers(
+                                "/api/v1/dispatch/**",
+                                "/api/v1/fleets/**",
+                                "/api/v1/assignments/**")
+                        .hasAnyAuthority("DISPATCHER", "MANAGER", "ADMIN")
 
-                .requestMatchers("/api/v1/deliveries/**")
-                .hasAnyAuthority("CUSTOMER", "DISPATCHER", "ADMIN")
+                        .requestMatchers("/ws/telemetry").permitAll()
 
-                .anyRequest().authenticated())
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider)
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                        .requestMatchers("/api/v1/deliveries/**")
+                        .hasAnyAuthority("CUSTOMER", "DISPATCHER", "ADMIN")
+
+                        .anyRequest().authenticated())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -85,17 +86,17 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:3000",
-            "http://localhost:4200",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:4200"));
+                "http://localhost:3000",
+                "http://localhost:4200",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:4200"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of(
-            "Authorization",
-            "Content-Type",
-            "X-Requested-With",
-            "Accept",
-            "Idempotency-Key"));
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "Accept",
+                "Idempotency-Key"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 

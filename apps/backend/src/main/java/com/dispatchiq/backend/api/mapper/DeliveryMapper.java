@@ -16,11 +16,11 @@ public class DeliveryMapper {
             return null;
         }
 
-        // Default coordinate fallbacks if needed
-        Double pickupLat = 0.0;
-        Double pickupLong = 0.0;
-        Double dropoffLat = 0.0;
-        Double dropoffLong = 0.0;
+        // Safe coordinate extraction from transient field mappings
+        Double pickupLat = delivery.getPickupLatitude() != null ? delivery.getPickupLatitude() : 0.0;
+        Double pickupLong = delivery.getPickupLongitude() != null ? delivery.getPickupLongitude() : 0.0;
+        Double dropoffLat = delivery.getDropoffLatitude() != null ? delivery.getDropoffLatitude() : 0.0;
+        Double dropoffLong = delivery.getDropoffLongitude() != null ? delivery.getDropoffLongitude() : 0.0;
 
         // Use system default or UTC timezone to convert OffsetDateTime to ZonedDateTime cleanly
         ZoneId zone = ZoneId.systemDefault();

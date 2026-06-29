@@ -25,7 +25,7 @@ const MapComponent = dynamic<MapComponentProps>(
 );
 
 
-const PHOTON_BASE = process.env.NEXT_PUBLIC_PHOTON_URL || 'https://photon.komoot.io/api';
+const PHOTON_BASE = 'https://photon.komoot.io/api';
 const OSRM_BASE = process.env.NEXT_PUBLIC_OSRM_URL || 'http://localhost:5000';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '/api/deliveries';
 const DEBOUNCE_MS = 300;

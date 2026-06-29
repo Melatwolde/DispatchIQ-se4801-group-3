@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fleetService } from '@dispatchiq/api-client';
+import { fleetService } from '../../../../libs/api-client/src';
 
 export function useFleets() {
   return useQuery({

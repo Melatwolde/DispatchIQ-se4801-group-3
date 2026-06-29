@@ -20,12 +20,6 @@ import java.util.Optional;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Service that talks to the local Photon (geocoding) and OSRM (routing / distance‑matrix) containers.
- *
- * All URLs use {@code host.docker.internal} so the Spring Boot container can reach the other containers
- * on the host network.
- */
 @Service
 public class GeospatialRoutingService {
 

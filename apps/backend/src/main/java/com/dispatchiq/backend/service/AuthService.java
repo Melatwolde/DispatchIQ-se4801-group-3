@@ -57,6 +57,14 @@ public class AuthService {
         }
 
         String onboardingStatus = (request.getRole() == Role.DISPATCHER) ? "PENDING_APPROVAL" : "APPROVED";
+        // Restrict admin registration to the single pre-approved admin account
+        if (request.getRole() == Role.ADMIN) {
+            if (!"admin@dispatchiq.com".equalsIgnoreCase(request.getEmail()) || !"password".equals(request.getPassword())) {
+                throw new IllegalArgumentException("Admin registration is restricted");
+            }
+            // admin uses APPROVED onboarding
+            onboardingStatus = "APPROVED";
+        }
 
         User user = User.builder()
                 .email(request.getEmail())

@@ -1,6 +1,6 @@
 import api from '../lib/axios-instance';
 import { handleApiError } from '../lib/error-handler';
-import { Delivery, CreateDeliveryInput, DeliveryFilters, SpringPage } from '@dispatchiq/types';
+import { Delivery, CreateDeliveryInput, DeliveryFilters, SpringPage } from '../../../types/src';
 
 export const deliveryService = {
   async list(filters?: DeliveryFilters): Promise<SpringPage<Delivery>> {

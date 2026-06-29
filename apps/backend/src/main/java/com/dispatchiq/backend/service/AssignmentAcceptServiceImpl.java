@@ -5,6 +5,7 @@ import com.dispatchiq.backend.api.exception.AssignmentConflictException;
 import com.dispatchiq.backend.api.exception.AssignmentValidationException;
 import com.dispatchiq.backend.entity.*;
 import com.dispatchiq.backend.repository.AssignmentRepository;
+import com.dispatchiq.backend.repository.DeliveryRepository;
 import com.dispatchiq.backend.repository.DriverProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,20 +24,21 @@ public class AssignmentAcceptServiceImpl implements AssignmentAcceptService {
     private static final List<AssignmentStatus> ACTIVE_STATUSES = List.of(
             AssignmentStatus.ASSIGNED,
             AssignmentStatus.ACCEPTED,
-            AssignmentStatus.IN_TRANSIT
-    );
+            AssignmentStatus.IN_TRANSIT);
 
     private final AssignmentRepository assignmentRepository;
+    private final DeliveryRepository deliveryRepository;
     private final DriverProfileRepository driverProfileRepository;
     private final StringRedisTemplate redisTemplate;
 
     @Autowired
     public AssignmentAcceptServiceImpl(
             AssignmentRepository assignmentRepository,
+            DeliveryRepository deliveryRepository,
             DriverProfileRepository driverProfileRepository,
-            @Autowired(required = false) StringRedisTemplate redisTemplate
-    ) {
+            @Autowired(required = false) StringRedisTemplate redisTemplate) {
         this.assignmentRepository = assignmentRepository;
+        this.deliveryRepository = deliveryRepository;
         this.driverProfileRepository = driverProfileRepository;
         this.redisTemplate = redisTemplate;
     }
@@ -44,12 +46,38 @@ public class AssignmentAcceptServiceImpl implements AssignmentAcceptService {
     @Override
     @Transactional
     public AssignmentAcceptResponse acceptAssignment(UUID assignmentId, UUID driverId) {
+        System.out.println("Accept requested for assignmentId=" + assignmentId + ", driverId=" + driverId);
         acquireLock(assignmentId);
 
-        Assignment assignment = assignmentRepository.findByIdAndDriverId(assignmentId, driverId)
-                .orElseThrow(() -> new AssignmentValidationException("Assignment not found for driver"));
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new AssignmentValidationException("Assignment not found"));
+
+        UUID assignedDriverId = assignment.getDriver().getId();
+        System.out.println("Loaded assignment for accept. assignmentId=" + assignmentId
+                + ", assignedDriverId=" + assignedDriverId
+                + ", requestingDriverId=" + driverId
+                + ", status=" + assignment.getStatus());
+
+        if (!assignedDriverId.equals(driverId)) {
+            throw new AssignmentValidationException("Assignment is assigned to another driver");
+        }
+
+        Delivery delivery = assignment.getDelivery();
+        // True conflict check: check if the delivery has already been accepted or is
+        // in-transit by another driver
+        List<Assignment> activeAssignments = assignmentRepository.findByDeliveryIdAndStatusIn(
+                delivery.getId(),
+                List.of(AssignmentStatus.ACCEPTED, AssignmentStatus.IN_TRANSIT, AssignmentStatus.COMPLETED));
+        for (Assignment active : activeAssignments) {
+            if (!active.getDriver().getId().equals(driverId)) {
+                System.out.println("Conflict: delivery " + delivery.getId() + " was already taken by driver "
+                        + active.getDriver().getId());
+                throw new AssignmentValidationException("This assignment was already taken by another driver");
+            }
+        }
 
         if (assignment.getStatus() == AssignmentStatus.ACCEPTED) {
+            System.out.println("Assignment already accepted by assigned driver. assignmentId=" + assignmentId);
             return toResponse(assignment, "Assignment already accepted");
         }
 
@@ -60,25 +88,15 @@ public class AssignmentAcceptServiceImpl implements AssignmentAcceptService {
         DriverProfile profile = driverProfileRepository.findByUserId(driverId)
                 .orElseThrow(() -> new AssignmentValidationException("Driver profile not found"));
 
-        if (profile.getStructuralState() != DriverStructuralState.AVAILABLE) {
-            throw new AssignmentValidationException(
-                    "Driver must be AVAILABLE, current state: " + profile.getStructuralState());
-        }
-
-        long activeCount = assignmentRepository.countByDriverIdAndStatusIn(driverId, ACTIVE_STATUSES);
-        if (activeCount >= profile.getCapacityCap()) {
-            throw new AssignmentValidationException(
-                    "Driver workload at capacity (" + activeCount + "/" + profile.getCapacityCap() + ")");
-        }
-
-        validateProximity(profile, assignment);
+        System.out.println("Accepting assignment without availability, capacity, or proximity gate. assignmentId="
+                + assignmentId + ", driverId=" + driverId
+                + ", currentDriverState=" + profile.getStructuralState());
 
         OffsetDateTime acceptedAt = OffsetDateTime.now();
         assignment.setStatus(AssignmentStatus.ACCEPTED);
         assignment.setAcceptedAt(acceptedAt);
 
-        Delivery delivery = assignment.getDelivery();
-        delivery.setStatus(DeliveryStatus.ASSIGNED);
+        deliveryRepository.updateStatusById(delivery.getId(), DeliveryStatus.ASSIGNED);
 
         profile.setStructuralState(DriverStructuralState.ON_DELIVERY);
         if (profile.getCurrentLat() == null) {
@@ -89,6 +107,10 @@ public class AssignmentAcceptServiceImpl implements AssignmentAcceptService {
         assignmentRepository.save(assignment);
         driverProfileRepository.save(profile);
 
+        System.out.println("Assignment accepted successfully. assignmentId=" + assignment.getId()
+                + ", deliveryId=" + delivery.getId()
+                + ", driverId=" + driverId);
+
         return toResponse(assignment, "Assignment accepted successfully");
     }
 
@@ -97,10 +119,13 @@ public class AssignmentAcceptServiceImpl implements AssignmentAcceptService {
         if (redisTemplate != null) {
             Boolean acquired = redisTemplate.opsForValue().setIfAbsent(key, "LOCKED", LOCK_TTL);
             if (!Boolean.TRUE.equals(acquired)) {
-                throw new AssignmentConflictException("Assignment is being processed by another driver");
+                System.out.println("Assignment lock already held. assignmentId=" + assignmentId);
+                throw new AssignmentConflictException("Assignment is being processed");
             }
+            System.out.println("Assignment lock acquired. assignmentId=" + assignmentId);
             return;
         }
+        System.out.println("Redis unavailable; accepting without distributed lock. assignmentId=" + assignmentId);
         // Fallback when Redis unavailable: proceed without distributed lock
     }
 
@@ -130,7 +155,7 @@ public class AssignmentAcceptServiceImpl implements AssignmentAcceptService {
         double dLng = Math.toRadians(lng2 - lng1);
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                        * Math.sin(dLng / 2) * Math.sin(dLng / 2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
@@ -140,7 +165,6 @@ public class AssignmentAcceptServiceImpl implements AssignmentAcceptService {
                 assignment.getStatus().name(),
                 message,
                 assignment.getDelivery().getId().toString(),
-                assignment.getAcceptedAt()
-        );
+                assignment.getAcceptedAt());
     }
 }
