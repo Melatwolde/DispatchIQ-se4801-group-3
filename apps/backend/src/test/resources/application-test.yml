@@ -6,21 +6,15 @@ spring:
     repair-on-migrate: true
 
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/dispatchiq}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres123}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
-
-jwt:
-  secret: ${JWT_SECRET:dGhpcy1pcy1hLXNhZmUtYW5kLXNlY3VyZS0zMi1ieXRlLXNlY3JldC1rZXk=}
-  expiration: 86400000
-  refresh-expiration: 604800000
-  
+        dialect: org.hibernate.dialect.PostgreSQLDialect
