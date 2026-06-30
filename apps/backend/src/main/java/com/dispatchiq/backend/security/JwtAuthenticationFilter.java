@@ -36,6 +36,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
+        
+        System.out.println("DEBUG: Filter triggered for URL: " + request.getRequestURI());
+        System.out.println("DEBUG: Auth Header: " + request.getHeader("Authorization"));
+
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userEmail;
@@ -50,9 +54,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+
         try {
             userEmail = jwtService.extractUsername(jwt);
         } catch (JwtException | IllegalArgumentException e) {
+            System.err.println("DEBUG: JWT processing failed:");
+            e.printStackTrace(); // This will tell us if it's expired or has a bad signature
             filterChain.doFilter(request, response);
             return;
         }
@@ -65,8 +72,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             userDetails,
                             null,
                             userDetails.getAuthorities());
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request));
+                    
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    
+                    System.out.println("DEBUG: Authenticating User: " + userDetails.getUsername());
+                    System.out.println("DEBUG: Authorities being granted: " + userDetails.getAuthorities());
+                    
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             } catch (UsernameNotFoundException ignored) {

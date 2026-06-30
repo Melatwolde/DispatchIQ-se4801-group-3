@@ -18,4 +18,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     
 
 List<User> findByRoleAndOnboardingStatus(@Param("role") Role role, @Param("status") String onboardingStatus);
+  long countByRoleAndOnboardingStatus(Role role, String onboardingStatus);
+    long countByRole(Role role);
+    List<User> findByRole(Role role);
 }

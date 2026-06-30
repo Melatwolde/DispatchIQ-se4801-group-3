@@ -2,105 +2,80 @@
 
 import React, { useEffect, useState } from 'react';
 import RegisterVehicleModal from './RegisterVehicleModal';
-import { ReviewPendingModal } from './ReviewPendingModal';
 import { StatCard } from '../../../../components/ui/StatCard';
 import { DataTable } from '../../../../components/ui/DataTable';
-import { Users, AlertTriangle, Truck, Route, Bell } from 'lucide-react';
-import { getPendingDispatchers } from '../../../../lib/server-actions/auth.actions';
+import { Users, AlertTriangle, Truck } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [pendingRegistrations, setPendingRegistrations] = useState<any[]>([]);
-  const [selectedRegistration, setSelectedRegistration] = useState<any>(null);
-
-  const usersData = [
-    { id: 1, name: 'Zoe', email: 'zoe@dispatchiq.com', role: 'Admin', status: 'Active' },
-    { id: 2, name: 'John', email: 'john@dispatchiq.com', role: 'Dispatcher', status: 'Active' },
-    { id: 3, name: 'Alice', email: 'alice@dispatchiq.com', role: 'User', status: 'Inactive' },
-  ];
+  const [view, setView] = useState('ALL'); 
+  const [stats, setStats] = useState({ totalUsers: 0, totalDispatchers: 0, pendingDispatchers: 0 });
+  const [allUsers, setAllUsers] = useState<any[]>([]);
 
   const columns = [
-    { key: 'name', header: 'Name' },
+    { key: 'fullName', header: 'Name' },
     { key: 'email', header: 'Email' },
     { key: 'role', header: 'Role' },
-    { 
-      key: 'status', 
-      header: 'Status',
-      render: (row: any) => (
-        <span style={{ color: row.status === 'Active' ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
-          {row.status}
-        </span>
-      )
-    },
+    { key: 'onboardingStatus', header: 'Status' }
   ];
 
-
-  const fetchPendingData = async () => {
+  const fetchData = async () => {
     try {
-      const data = await getPendingDispatchers();
-      setPendingRegistrations(data);
+      const statsRes = await fetch(`http://localhost:8080/api/v1/admin/stats?t=${Date.now()}`, { credentials: 'include' });
+      if (statsRes.ok) setStats(await statsRes.json());
+
+      const usersRes = await fetch(`http://localhost:8080/api/v1/admin/all-users?t=${Date.now()}`, { credentials: 'include' });
+      if (usersRes.ok) setAllUsers(await usersRes.json());
     } catch (error) {
-      console.error('Error fetching pending registrations:', error);
+      console.error('Fetch error:', error);
     }
   };
 
   useEffect(() => {
-    fetchPendingData();
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  const handleNotificationClick = () => {
-    if (pendingRegistrations.length > 0) {
-      setSelectedRegistration(pendingRegistrations[0]);
-      setIsReviewModalOpen(true);
-    }
-  };
+  const filteredData = allUsers.filter(user => {
+    if (view === 'USERS') return user.role === 'CUSTOMER';
+    if (view === 'DISPATCHERS') return user.role === 'DISPATCHER';
+    if (view === 'PENDING') return user.onboardingStatus === 'PENDING_APPROVAL';
+    return true;
+  });
+
+  const cardStyle = { cursor: 'pointer', transition: 'all 0.2s ease' };
 
   return (
     <div>
-      {pendingRegistrations.length > 0 && (
-        <div 
-          onClick={handleNotificationClick}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            backgroundColor: '#fef3c7', border: '1px solid #f59e0b',
-            color: '#b45309', padding: '12px 16px', borderRadius: '6px',
-            marginBottom: '24px', cursor: 'pointer', fontWeight: 500
-          }}
-        >
-          <Bell size={18} className="animate-bounce" />
-          <span>New Dispatcher & Vehicle Registration Pending Approval ({pendingRegistrations.length})</span>
+      <div className="grid-container" style={{ marginBottom: '32px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        
+        {/* Total Customers: Strictly count only where role is 'CUSTOMER' */}
+        <div onClick={() => setView('USERS')} style={cardStyle} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+          <StatCard 
+            title="Total Customers" 
+            value={String(allUsers.filter(u => u.role === 'CUSTOMER').length)} 
+            icon={Users} 
+          />
         </div>
-      )}
 
-      <div className="grid-container" style={{ marginBottom: '32px' }}>
-        <div className="col-span-3"><StatCard title="Total Users" value="1,284" icon={Users} trend="12%" trendUp={true} /></div>
-        <div className="col-span-3"><StatCard title="Active Routes" value="342" icon={Route} trend="4%" trendUp={true} /></div>
-        <div className="col-span-3"><StatCard title="Fleet Status" value="98%" icon={Truck} trend="2%" trendUp={false} /></div>
-        <div className="col-span-3"><StatCard title="Alerts" value={String(3 + pendingRegistrations.length)} icon={AlertTriangle} trend="1" trendUp={false} /></div>
-      </div>
+        {/* Total Dispatchers: Use your API stat */}
+        <div onClick={() => setView('DISPATCHERS')} style={cardStyle} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+          <StatCard title="Total Dispatchers" value={String(stats.totalDispatchers)} icon={Truck} />
+        </div>
 
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 600 }}>System Users</h2>
-        <div>
-          <button 
-            onClick={() => setIsVehicleModalOpen(true)}
-            style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', marginRight: '12px' }}
-          >
-            Add Vehicle
-          </button>
+        {/* Pending Approvals: Use your API stat */}
+        <div onClick={() => setView('PENDING')} style={cardStyle} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+          <StatCard title="Pending Approvals" value={String(stats.pendingDispatchers)} icon={AlertTriangle} />
         </div>
       </div>
 
-      <DataTable data={usersData} columns={columns} />
+      <div style={{ marginBottom: '16px' }}>
+        <h2>System Users ({view})</h2>
+      </div>
 
+      <DataTable data={filteredData} columns={columns} />
       <RegisterVehicleModal isOpen={isVehicleModalOpen} onClose={() => setIsVehicleModalOpen(false)} />
-      <ReviewPendingModal 
-        isOpen={isReviewModalOpen}
-        onClose={() => setIsReviewModalOpen(false)}
-        data={selectedRegistration}
-        onApprovalSuccess={fetchPendingData}
-      />
     </div>
   );
 }
