@@ -6,9 +6,14 @@ on:
   pull_request:
     branches: [ main, develop, E2E ]
 
+# Forces GitHub to abandon stale environment states for new commits
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     services:
       postgres:
@@ -40,4 +45,7 @@ jobs:
       run: chmod +x ./mvnw
 
     - name: Run Targeted Security Tests
+      # Force JAVA_HOME context directly into the shell script executor execution scope
+      env:
+        JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
       run: ./mvnw -pl apps/backend clean test -Dtest=SecurityAuthTest -Dspring.profiles.active=test
