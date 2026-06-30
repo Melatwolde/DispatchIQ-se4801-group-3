@@ -13,7 +13,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration"
+})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 public class SecurityAuthTest {
@@ -21,12 +23,6 @@ public class SecurityAuthTest {
     @Autowired
     private MockMvc mockMvc;
 
-    /**
-     * 1. Unauthenticated Check
-     * Verifies that requests without an authorization context to protected
-     * endpoints
-     * are rejected immediately by the security filter chain.
-     */
     @Test
     @DisplayName("Should return 401 Unauthorized when accessing protected endpoints without credentials")
     public void unauthenticatedUsers_AreDeniedAccess() throws Exception {
@@ -35,12 +31,6 @@ public class SecurityAuthTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    /**
-     * 2. Authenticated Access Check
-     * Simulates a successfully authenticated user context via standard JWT or
-     * Session mechanisms
-     * to ensure the secure endpoint successfully fulfills the communication loop.
-     */
     @Test
     @WithMockUser(username = "driver_user", roles = { "DRIVER" })
     @DisplayName("Should return 200 OK when authenticated user accesses permitted endpoint")
@@ -50,13 +40,6 @@ public class SecurityAuthTest {
                 .andExpect(status().isOk());
     }
 
-    /**
-     * 3. Role-Based Access Control Check
-     * Validates that permissions are properly segmented. A user assigned the
-     * 'DRIVER' role
-     * must be barred from administrative operations (e.g., dispatcher management
-     * paths).
-     */
     @Test
     @WithMockUser(username = "unauthorized_driver", roles = { "DRIVER" })
     @DisplayName("Should return 403 Forbidden when user lacks the required management role")
@@ -66,12 +49,6 @@ public class SecurityAuthTest {
                 .andExpect(status().isForbidden());
     }
 
-    /**
-     * 4. Management RBAC Check
-     * Validates that authorized roles (e.g., 'DISPATCHER') are correctly authorized
-     * by
-     * Spring Security rules to touch management resources.
-     */
     @Test
     @WithMockUser(username = "dispatcher_user", roles = { "DISPATCHER" })
     @DisplayName("Should return 200 OK when management user accesses management endpoints")
