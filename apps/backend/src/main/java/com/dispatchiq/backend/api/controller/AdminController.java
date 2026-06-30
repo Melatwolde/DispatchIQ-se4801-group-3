@@ -6,7 +6,7 @@ import com.dispatchiq.backend.entity.Role;
 import com.dispatchiq.backend.entity.Vehicle;
 import com.dispatchiq.backend.repository.UserRepository;
 import com.dispatchiq.backend.repository.VehicleRepository;
-import com.dispatchiq.backend.service.NotificationService; // IMPORTED NEW SERVICE
+import com.dispatchiq.backend.service.NotificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +25,7 @@ public class AdminController {
 
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
-    private final NotificationService notificationService; // ADDED FIELD
+    private final NotificationService notificationService;
 
     public AdminController(UserRepository userRepository, 
                            VehicleRepository vehicleRepository, 
@@ -35,12 +35,23 @@ public class AdminController {
         this.notificationService = notificationService;
     }
 
-    // 1. Fetch all pending dispatchers packed cleanly into our DTO format
     @GetMapping("/pending-dispatchers")
     public ResponseEntity<List<PendingDispatcherResponse>> getPendingDispatchers() {
-        log.info("Fetching all pending dispatcher registrations");
+        log.info("--- DEBUGGING START ---");
         
-        List<User> pendingUsers = userRepository.findByRoleAndOnboardingStatus(Role.DISPATCHER, "PENDING");
+        // Log all users to see if we are even talking to the right database
+        List<User> allUsers = userRepository.findAll();
+        log.info("Total users found in database: {}", allUsers.size());
+        for (User u : allUsers) {
+            log.info("Found User: {} | Role: {} | OnboardingStatus: {}", 
+                     u.getEmail(), u.getRole(), u.getOnboardingStatus());
+        }
+
+        // Execute the search
+        List<User> pendingUsers = userRepository.findByRoleAndOnboardingStatus(Role.DISPATCHER, "PENDING_APPROVAL");
+        log.info("Query returned {} matches", pendingUsers.size());
+        log.info("--- DEBUGGING END ---");
+
         List<PendingDispatcherResponse> responseList = new ArrayList<>();
         
         for (User user : pendingUsers) {
@@ -63,7 +74,6 @@ public class AdminController {
         return ResponseEntity.ok(responseList);
     }
 
-    // 2. Transact the approval steps and trigger real email/SMS alerts
     @Transactional
     @PutMapping("/dispatchers/{id}/approve")
     public ResponseEntity<?> approveDispatcher(@PathVariable UUID id) {
@@ -81,19 +91,15 @@ public class AdminController {
             vehicleRepository.save(vehicle);
         }
         
-        // Construct clear, professional notification messages
         String plateInfo = vehicle != null ? "with vehicle plate [" + vehicle.getLicensePlate() + "]" : "";
         String subject = "DispatchIQ Account Approved!";
         String messageText = String.format(
-            "Hello %s, your DispatchIQ Dispatcher account %s has been approved! You can now log into your dashboard.",
+            "Hello %s, your DispatchIQ Dispatcher account %s has been approved!",
             user.getFullName() != null ? user.getFullName() : "Driver",
             plateInfo
         );
 
-        // TRIGGER THE REAL EMAIL
         notificationService.sendEmail(user.getEmail(), subject, messageText);
-
-        // TRIGGER THE REAL SMS DISPATCH
         notificationService.sendSMS(user.getPhone(), messageText);
 
         return ResponseEntity.ok(Map.of(

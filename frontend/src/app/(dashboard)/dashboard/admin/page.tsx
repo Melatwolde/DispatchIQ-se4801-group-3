@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { RegisterVehicleModal } from './RegisterVehicleModal';
+import RegisterVehicleModal from './RegisterVehicleModal';
 import { ReviewPendingModal } from './ReviewPendingModal';
 import { StatCard } from '../../../../components/ui/StatCard';
 import { DataTable } from '../../../../components/ui/DataTable';
 import { Users, AlertTriangle, Truck, Route, Bell } from 'lucide-react';
-import { getAuthToken } from '../../../../lib/server-actions/auth.actions';
+import { getPendingDispatchers } from '../../../../lib/server-actions/auth.actions';
 
 export default function AdminDashboard() {
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
@@ -35,19 +35,11 @@ export default function AdminDashboard() {
     },
   ];
 
-  // Fetch real pending registrations from our new Spring Boot endpoint
+
   const fetchPendingData = async () => {
     try {
-      const token = await getAuthToken();
-      const response = await fetch('http://localhost:8080/api/v1/admin/pending-dispatchers', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPendingRegistrations(data);
-      }
+      const data = await getPendingDispatchers();
+      setPendingRegistrations(data);
     } catch (error) {
       console.error('Error fetching pending registrations:', error);
     }
@@ -66,27 +58,15 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      {/* Dynamic Admin Review Notification Bar */}
       {pendingRegistrations.length > 0 && (
         <div 
           onClick={handleNotificationClick}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            backgroundColor: '#fef3c7',
-            border: '1px solid #f59e0b',
-            color: '#b45309',
-            padding: '12px 16px',
-            borderRadius: '6px',
-            marginBottom: '24px',
-            cursor: 'pointer',
-            fontWeight: 500,
-            fontSize: '14px',
-            transition: 'background-color 0.2s'
+            display: 'flex', alignItems: 'center', gap: '12px',
+            backgroundColor: '#fef3c7', border: '1px solid #f59e0b',
+            color: '#b45309', padding: '12px 16px', borderRadius: '6px',
+            marginBottom: '24px', cursor: 'pointer', fontWeight: 500
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fde68a')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#fef3c7')}
         >
           <Bell size={18} className="animate-bounce" />
           <span>New Dispatcher & Vehicle Registration Pending Approval ({pendingRegistrations.length})</span>
@@ -105,29 +85,16 @@ export default function AdminDashboard() {
         <div>
           <button 
             onClick={() => setIsVehicleModalOpen(true)}
-            style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginRight: '12px' }}
+            style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', marginRight: '12px' }}
           >
             Add Vehicle
-          </button>
-          <button style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '6px 12px', borderRadius: '4px', fontSize: '14px', cursor: 'pointer' }}>
-            Add User
           </button>
         </div>
       </div>
 
-      <DataTable 
-        data={usersData} 
-        columns={columns} 
-        actions={() => <button style={{ background: 'none', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '4px 8px', color: 'var(--color-text-muted)', cursor: 'pointer' }}>Edit</button>}
-      />
+      <DataTable data={usersData} columns={columns} />
 
-      {/* Add Fleet Vehicle Modal */}
-      <RegisterVehicleModal 
-        isOpen={isVehicleModalOpen} 
-        onClose={() => setIsVehicleModalOpen(false)} 
-      />
-
-      {/* Verification & Approval Review Modal */}
+      <RegisterVehicleModal isOpen={isVehicleModalOpen} onClose={() => setIsVehicleModalOpen(false)} />
       <ReviewPendingModal 
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
