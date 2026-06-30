@@ -2,15 +2,14 @@ name: Backend Security CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, E2E ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, E2E ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    # Add a PostgreSQL service container so the spring datasource check succeeds
     services:
       postgres:
         image: postgres:15
@@ -30,10 +29,11 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    # FIX: Upgraded JDK from 17 to 21 to match your project release properties
+    - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
         cache: 'maven'
 
