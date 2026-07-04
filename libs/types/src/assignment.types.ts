@@ -1,6 +1,6 @@
 export interface AssignmentRequest {
   orderId: string;
-  driverId: string;
+  driverId?: string;
   priority: number;
   notes?: string;
 }

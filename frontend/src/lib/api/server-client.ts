@@ -1,4 +1,4 @@
-import { api } from '@dispatchiq/api-client';
+import { api } from '../../../../libs/api-client/src';
 import { cookies } from 'next/headers';
 
 /**

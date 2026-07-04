@@ -49,3 +49,5 @@ target/
 .m2/repository
 
 entities.md
+.vercel
+.env*

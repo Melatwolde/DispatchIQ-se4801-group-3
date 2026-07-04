@@ -16,6 +16,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmailIgnoreCase(String email);
     boolean existsByEmailIgnoreCase(String email);
     
+    
+    List<User> findByRoleAndOnboardingStatus(@Param("role") Role role, @Param("status") String onboardingStatus);
 
-List<User> findByRoleAndOnboardingStatus(@Param("role") Role role, @Param("status") String onboardingStatus);
+    // Added: simple lookup by role to support relaxed fallback selection
+    List<User> findByRole(@Param("role") Role role);
 }

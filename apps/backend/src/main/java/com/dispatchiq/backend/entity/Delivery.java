@@ -7,7 +7,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.PrecisionModel;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -29,15 +32,9 @@ public class Delivery {
     @Column(name = "pickup_address", columnDefinition = "TEXT")
     private String pickupAddress;
 
-    @Column(name = "pickup_coords", columnDefinition = "geography(Point,4326)")
-    private String pickupCoords;
-
     @NotBlank
     @Column(name = "dropoff_address", columnDefinition = "TEXT")
     private String dropoffAddress;
-
-    @Column(name = "dropoff_coords", columnDefinition = "geography(Point,4326)")
-    private String dropoffCoords;
 
     @Column(name = "requested_pickup_time")
     private OffsetDateTime requestedPickupTime;
@@ -48,19 +45,26 @@ public class Delivery {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "priority", columnDefinition = "delivery_priority")
-    @org.hibernate.annotations.ColumnTransformer(write = "?::delivery_priority")
+    @org.hibernate.annotations.ColumnTransformer(write = "?::delivery_priority", read = "priority::text")
     private DeliveryPriority priority = DeliveryPriority.MEDIUM;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", columnDefinition = "delivery_status")
-    @org.hibernate.annotations.ColumnTransformer(write = "?::delivery_status")
+    @org.hibernate.annotations.ColumnTransformer(write = "?::delivery_status", read = "status::text")
     private DeliveryStatus status = DeliveryStatus.PENDING;
+
 
     @Column(name = "special_instructions", columnDefinition = "TEXT")
     private String specialInstructions;
 
     @Column(name = "proof_of_delivery_json", columnDefinition = "jsonb")
     private String proofOfDeliveryJson;
+
+    @Column(name = "pickup_coords", columnDefinition = "geography(Point,4326)")
+    private Point pickupCoords;
+
+    @Column(name = "dropoff_coords", columnDefinition = "geography(Point,4326)")
+    private Point dropoffCoords;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -96,7 +100,7 @@ public class Delivery {
         }
     }
 
-    public static Delivery fromRequest(
+        public static Delivery fromRequest(
             DeliveryUrgency urgency,
             DeliveryStatus status,
             String pickupAddress,
@@ -108,18 +112,32 @@ public class Delivery {
             String notes,
             User customer
     ) {
+        // Instantiate the PostGIS geometry factory with SRID 4326
+        GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+
         Delivery delivery = new Delivery();
         delivery.setCustomer(customer);
         delivery.setPickupAddress(pickupAddress);
         delivery.setPickupLatitude(pickupLatitude);
         delivery.setPickupLongitude(pickupLongitude);
+        
+        // Create a JTS Point object using the coordinate geometry factory
+        Point pickupPoint = geometryFactory.createPoint(new Coordinate(pickupLongitude, pickupLatitude));
+        delivery.setPickupCoords(pickupPoint);
+        
         delivery.setDropoffAddress(dropoffAddress);
         delivery.setDropoffLatitude(dropoffLatitude);
         delivery.setDropoffLongitude(dropoffLongitude);
+        
+        // Create a JTS Point object for the dropoff coordinates
+        Point dropoffPoint = geometryFactory.createPoint(new Coordinate(dropoffLongitude, dropoffLatitude));
+        delivery.setDropoffCoords(dropoffPoint);
+        
         delivery.setUrgency(urgency);
         delivery.setPriority(urgency.toPriority());
         delivery.setStatus(status != null ? status : DeliveryStatus.PENDING);
         delivery.setSpecialInstructions(notes);
         return delivery;
     }
+
 }

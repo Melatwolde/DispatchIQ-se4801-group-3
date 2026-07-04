@@ -7,11 +7,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/deliveries")
@@ -32,6 +35,7 @@ public class DeliveryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    // Existing endpoint - kept for customers
     @GetMapping
     public ResponseEntity<Page<DeliveryDto>> list(
             @PageableDefault(size = 20) Pageable pageable,
@@ -39,5 +43,20 @@ public class DeliveryController {
     ) {
         Page<DeliveryDto> page = deliveryService.list(pageable, status);
         return ResponseEntity.ok(page);
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<Page<DeliveryDto>> getAvailableDeliveries(
+            @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<DeliveryDto> page = deliveryService.getAvailableDeliveries(pageable);
+        return ResponseEntity.ok(page);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<DeliveryDto> getById(@PathVariable UUID id) {
+        return deliveryService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

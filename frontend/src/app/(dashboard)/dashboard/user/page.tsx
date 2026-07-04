@@ -44,7 +44,7 @@ export default function UserDashboard() {
       setError(null);
 
       try {
-        const response = await fetch('/api/deliveries?page=0&size=50');
+        const response = await fetch('/api/deliveries?page=0&size=50', { credentials: 'include' });
         if (!response.ok) {
           throw new Error(`Failed to fetch deliveries (${response.status})`);
         }

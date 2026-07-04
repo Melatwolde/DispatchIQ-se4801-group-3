@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getServerClient } from '../api/server-client';
-import { fleetService } from '@dispatchiq/api-client';
+import { fleetService } from '../../../../libs/api-client/src';
 
 export async function updateFleet(id: string, formData: FormData) {
   const data = Object.fromEntries(formData.entries());

@@ -1,6 +1,6 @@
 import api from '../lib/axios-instance';
 import { handleApiError } from '../lib/error-handler';
-import { AssignmentRequest, AssignmentResponse } from '@dispatchiq/types';
+import { AssignmentRequest, AssignmentResponse } from '../../../types/src';
 
 export const assignmentService = {
   async assign(data: AssignmentRequest, idempotencyKey: string): Promise<AssignmentResponse> {

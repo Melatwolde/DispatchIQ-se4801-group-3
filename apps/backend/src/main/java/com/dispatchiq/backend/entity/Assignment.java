@@ -28,8 +28,7 @@ public class Assignment {
     private User driver;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "assignment_status")
-    @org.hibernate.annotations.ColumnTransformer(write = "?::assignment_status")
+    @Column(name = "status", nullable = false, length = 20)
     private AssignmentStatus status = AssignmentStatus.ASSIGNED;
 
     @Column(nullable = false)

@@ -12,8 +12,7 @@ public record AssignmentRequest(
     @Pattern(regexp = "[0-9a-fA-F-]{36}", message = "orderId must be UUID")
     String orderId,
 
-    @Schema(description = "Public UUID of the driver", example = "9fa85f64-5717-4562-b3fc-2c963f66bbb7")
-    @NotBlank(message = "driverId is required")
+    @Schema(description = "Public UUID of the driver; omit to let the matching algorithm choose the best available driver")
     @Pattern(regexp = "[0-9a-fA-F-]{36}", message = "driverId must be UUID")
     String driverId,
 

@@ -1,6 +1,6 @@
 import api from '../lib/axios-instance';
 import { handleApiError } from '../lib/error-handler';
-import { Vehicle, UpdateVehicleInput, SpringPage, FleetDto } from '@dispatchiq/types';
+import { Vehicle, UpdateVehicleInput, SpringPage, FleetDto } from '../../../types/src';
 
 export const fleetService = {
   async list(): Promise<SpringPage<FleetDto>> {
